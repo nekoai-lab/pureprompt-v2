@@ -1,4 +1,4 @@
-import { DetectionResult, AssessmentResult, RiskLevel } from './types';
+import { DetectionResult, AssessmentResult } from './types';
 
 // API レスポンスの型
 interface AnalyzeResponse {
