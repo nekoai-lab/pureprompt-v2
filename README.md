@@ -52,18 +52,21 @@
 ## 🏗️ アーキテクチャ
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   ユーザー   │────▶│  React App  │────▶│  Vercel         │────▶│  LLM API        │
-│  (ブラウザ)  │◀────│  (Vite)     │◀────│  Serverless API │◀────│  Gemini/OpenAI  │
-└─────────────┘     └─────────────┘     └─────────────────┘     └─────────────────┘
+┌─────────────┐     ┌─────────────┐     ┌─────────────────┐
+│   ユーザー   │────▶│  React App  │────▶│  LLM API        │
+│  (ブラウザ)  │◀────│  (Vite)     │◀────│  Gemini/OpenAI  │
+└─────────────┘     └─────────────┘     └─────────────────┘
+                           │
+                    ┌──────┴──────┐
+                    │  判定ロジック │
+                    │  (logic.ts)  │
+                    └─────────────┘
 ```
 
 1. ユーザーがプロンプトを入力
-2. React アプリが Vercel Serverless API (`/api/analyze`) にリクエスト送信
-3. サーバーサイドで LLM API を呼び出し（APIキーは安全にサーバーで管理）
+2. React アプリが LLM API に分析リクエストを送信
+3. LLM がプロンプトを分析し、著作権リスクを判定
 4. 結果をユーザーに表示（リスクスコア + 安全な代替案）
-
-> ⚠️ **セキュリティ**: APIキーはサーバーサイドのみで使用され、ブラウザには露出しません
 
 ---
 
@@ -102,22 +105,20 @@ cp .env.example .env
 npm run dev
 ```
 
-### 環境変数の設定（ローカル開発）
+### 環境変数の設定
 
 `.env.example` をコピーして `.env` ファイルを作成し、APIキーを設定してください：
 
 ```env
 # 使用するLLMプロバイダー（gemini または openai）
-LLM_PROVIDER=gemini
+VITE_LLM_PROVIDER=gemini
 
 # Google Gemini API Key（推奨）
-GEMINI_API_KEY=your_api_key_here
+VITE_GEMINI_API_KEY=your_api_key_here
 
 # または OpenAI API Key
-OPENAI_API_KEY=your_api_key_here
+VITE_OPENAI_API_KEY=your_api_key_here
 ```
-
-> 📌 **Note**: v2からAPIキーはサーバーサイドで管理されます（`VITE_` プレフィックスは不要）
 
 <details>
 <summary>📌 APIキーの取得方法</summary>
@@ -137,30 +138,6 @@ OPENAI_API_KEY=your_api_key_here
 4. 生成されたキーを`.env`ファイルに設定
 
 </details>
-
----
-
-## 🚀 Vercel デプロイ
-
-### 1. GitHubリポジトリをVercelに接続
-
-1. [Vercel](https://vercel.com) にログイン
-2. 「Add New...」→「Project」を選択
-3. GitHubリポジトリをインポート
-
-### 2. 環境変数を設定
-
-Vercelダッシュボードの「Settings」→「Environment Variables」で設定：
-
-| 変数名 | 説明 |
-|--------|------|
-| `LLM_PROVIDER` | `gemini` または `openai` |
-| `GEMINI_API_KEY` | Google Gemini API キー |
-| `OPENAI_API_KEY` | OpenAI API キー（OpenAI使用時） |
-
-### 3. デプロイ
-
-プッシュするだけで自動デプロイ！🎉
 
 ---
 
@@ -190,21 +167,22 @@ npm run lint     # ESLint実行
 ### プロジェクト構造
 
 ```
-.
-├── api/
-│   └── analyze.ts       # Vercel Serverless Function（LLM API呼び出し）
-├── src/
-│   ├── App.tsx          # メインアプリ
-│   ├── logic.ts         # /api/analyze 呼び出し
-│   ├── types.ts         # 型定義
-│   ├── index.css        # グローバルスタイル
-│   ├── main.tsx         # エントリーポイント
-│   ├── components/
-│   │   ├── ResultView.tsx # 結果表示コンポーネント
-│   │   └── ui/          # Shadcn UIコンポーネント
-│   └── lib/
-│       └── utils.ts     # ユーティリティ関数
-└── vercel.json          # Vercel設定
+src/
+├── App.tsx            # メインアプリ
+├── logic.ts           # API呼び出し・判定ロジック
+├── types.ts           # 型定義
+├── index.css          # グローバルスタイル
+├── main.tsx           # エントリーポイント
+├── components/
+│   ├── ResultView.tsx # 結果表示コンポーネント
+│   └── ui/            # Shadcn UIコンポーネント
+│       ├── alert.tsx
+│       ├── badge.tsx
+│       ├── button.tsx
+│       ├── card.tsx
+│       └── textarea.tsx
+└── lib/
+    └── utils.ts       # ユーティリティ関数
 ```
 
 ### テスト
